@@ -84,6 +84,9 @@ app:
     # Upper bound for the date range of a single slot query.
     max-slot-query-days: 31
   notifications:
+    email:
+      # "log" = development sender that logs messages instead of sending them
+      sender: ${NOTIFICATIONS_EMAIL_SENDER:log}
     dispatcher:
       enabled: ${NOTIFICATIONS_DISPATCH_ENABLED:true}
       interval: 5s
