@@ -1,0 +1,4 @@
+# Local development profile (activate with SPRING_PROFILES_ACTIVE=dev).
+logging:
+  level:
+    com.slotwise: DEBUG
