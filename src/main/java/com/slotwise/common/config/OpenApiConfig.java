@@ -1,10 +1,12 @@
 package com.slotwise.common.config;
 
+import com.slotwise.auth.security.AuthenticatedUser;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import org.springdoc.core.utils.SpringDocUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -12,6 +14,11 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
     public static final String BEARER_SCHEME = "bearerAuth";
+
+    static {
+        // Resolved from the JWT by an argument resolver, not a request parameter.
+        SpringDocUtils.getConfig().addRequestWrapperToIgnore(AuthenticatedUser.class);
+    }
 
     @Bean
     OpenAPI slotwiseOpenApi() {
