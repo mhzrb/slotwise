@@ -88,9 +88,11 @@ public class ServiceOfferingService {
         return repository.findByProviderIdAndActiveTrueOrderByNameAsc(providerId);
     }
 
+    /** Active service of an active provider whose account is enabled; otherwise 404. */
     public ServiceOffering getPublic(UUID serviceId) {
         ServiceOffering service = getById(serviceId);
-        if (!service.isActive() || !service.getProvider().isActive()) {
+        if (!service.isActive() || !service.getProvider().isActive()
+                || !service.getProvider().getUser().isEnabled()) {
             throw new NotFoundException("Service", serviceId);
         }
         return service;

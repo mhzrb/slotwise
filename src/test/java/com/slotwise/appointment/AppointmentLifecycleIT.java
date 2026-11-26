@@ -115,6 +115,17 @@ class AppointmentLifecycleIT extends AbstractApiIntegrationTest {
     }
 
     @Test
+    void servicesOfDisabledProviderAccountsAreNotBookable() throws Exception {
+        TestUser admin = createAdmin();
+        mockMvc.perform(withJson(as(admin, patch("/api/v1/admin/users/{id}/status", provider.id())),
+                Map.of("enabled", false))).andExpect(status().isOk());
+
+        book(customer, at(day, "10:00"))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/services/{id}", serviceId)).andExpect(status().isNotFound());
+    }
+
+    @Test
     void appointmentIsVisibleOnlyToParticipantsAndAdmins() throws Exception {
         String id = bookedId(customer, at(day, "09:00"));
         TestUser stranger = registerCustomer("Stranger");

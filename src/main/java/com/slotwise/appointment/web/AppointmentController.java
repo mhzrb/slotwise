@@ -8,6 +8,7 @@ import com.slotwise.appointment.web.dto.ReasonRequest;
 import com.slotwise.appointment.web.dto.RescheduleAppointmentRequest;
 import com.slotwise.auth.security.AuthenticatedUser;
 import com.slotwise.common.web.PageResponse;
+import com.slotwise.common.web.SortWhitelist;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -30,12 +31,15 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/appointments")
 @Tag(name = "Appointments", description = "Booking and appointment lifecycle")
 public class AppointmentController {
+
+    private static final Set<String> SORTABLE = Set.of("startAt", "createdAt", "status");
 
     private final AppointmentService appointmentService;
 
@@ -69,7 +73,8 @@ public class AppointmentController {
             @Parameter(description = "Appointments starting before (ISO-8601 instant)")
             @RequestParam(required = false) Instant to,
             @ParameterObject @PageableDefault(sort = "startAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return PageResponse.from(appointmentService.listForCustomer(currentUser.id(), status, from, to, pageable),
+        return PageResponse.from(appointmentService.listForCustomer(currentUser.id(), status, from, to,
+                SortWhitelist.restrict(pageable, SORTABLE)),
                 AppointmentResponse::from);
     }
 

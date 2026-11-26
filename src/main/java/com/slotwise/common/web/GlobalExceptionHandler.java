@@ -5,6 +5,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.dao.PessimisticLockingFailureException;
@@ -44,6 +45,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     /** PostgreSQL SQLSTATE codes. */
     private static final String PG_EXCLUSION_VIOLATION = "23P01";
     private static final String PG_UNIQUE_VIOLATION = "23505";
+    /** Transient concurrency failures: deadlock, lock timeout, serialization failure. Safe to retry. */
+    private static final java.util.Set<String> PG_TRANSIENT = java.util.Set.of("40P01", "55P03", "40001");
 
     public record FieldError(String field, String message) {
     }
@@ -88,6 +91,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "The resource is busy; please retry", null);
         return ResponseEntity.status(response.getStatusCode()).header(HttpHeaders.RETRY_AFTER, "1")
                 .body(response.getBody());
+    }
+
+    /** Any other data access failure; transient lock/deadlock states become 503 instead of 500. */
+    @ExceptionHandler(DataAccessException.class)
+    ResponseEntity<ProblemDetail> handleDataAccess(DataAccessException ex) {
+        String sqlState = findSqlState(ex);
+        if (sqlState != null && PG_TRANSIENT.contains(sqlState)) {
+            log.warn("Transient database concurrency failure (sqlState={})", sqlState);
+            ResponseEntity<ProblemDetail> response = build(HttpStatus.SERVICE_UNAVAILABLE, "LOCK_TIMEOUT",
+                    "The resource is busy; please retry", null);
+            return ResponseEntity.status(response.getStatusCode()).header(HttpHeaders.RETRY_AFTER, "1")
+                    .body(response.getBody());
+        }
+        log.error("Data access failure (sqlState={})", sqlState, ex);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "An unexpected error occurred", null);
     }
 
     @ExceptionHandler({AccessDeniedException.class, AuthorizationDeniedException.class})

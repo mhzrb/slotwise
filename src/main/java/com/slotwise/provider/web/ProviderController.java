@@ -2,6 +2,7 @@ package com.slotwise.provider.web;
 
 import com.slotwise.auth.security.AuthenticatedUser;
 import com.slotwise.common.web.PageResponse;
+import com.slotwise.common.web.SortWhitelist;
 import com.slotwise.provider.service.ProviderService;
 import com.slotwise.provider.web.dto.ProviderProfileResponse;
 import com.slotwise.provider.web.dto.ProviderResponse;
@@ -21,12 +22,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/providers")
 @Tag(name = "Providers", description = "Provider discovery and provider self-management")
 public class ProviderController {
+
+    private static final Set<String> SORTABLE = Set.of("businessName", "createdAt");
 
     private final ProviderService providerService;
 
@@ -39,7 +43,7 @@ public class ProviderController {
     @Operation(summary = "Search active providers", description = "Case-insensitive match on business name.")
     public PageResponse<ProviderResponse> search(@RequestParam(required = false) String q,
             @ParameterObject @PageableDefault(sort = "businessName") Pageable pageable) {
-        return PageResponse.from(providerService.search(q, pageable),
+        return PageResponse.from(providerService.search(q, SortWhitelist.restrict(pageable, SORTABLE)),
                 ProviderResponse::from);
     }
 

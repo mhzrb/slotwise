@@ -58,6 +58,25 @@ CONSTRAINT ex_appointments_no_overlap EXCLUDE USING gist (
 * The insert is flushed (`saveAndFlush`) inside the transaction. A violation
   (SQLSTATE `23P01`) is translated to `409 SLOT_UNAVAILABLE`.
 
+### Why the lock is primary rather than the constraint: deadlocks
+
+The raw-insert concurrency test surfaced this in practice. When several
+transactions insert overlapping rows **at the same moment, without the
+provider lock**, PostgreSQL can deadlock. Each transaction inserts its tuple,
+then waits on the other's *uncommitted* tuple while checking the exclusion
+constraint. PostgreSQL detects the cycle after `deadlock_timeout` (1 s by
+default) and aborts one transaction with SQLSTATE `40P01`, not `23P01`. Under
+heavier contention, wait chains can also exceed `lock_timeout` (`55P03`).
+
+The invariant still holds: exactly one row commits. But the loser pays up to a
+second of latency and receives a deadlock error instead of a clean conflict.
+Taking the provider row lock first serialises conflicting writers *before*
+any tuple is inserted, so on the application path conflicts are always
+detected cleanly by the availability check (`409 SLOT_UNAVAILABLE`), and
+deadlocks cannot occur. If one ever did (some future code path that skips the
+lock), the API maps `40P01` / `55P03` / `40001` to `503` + `Retry-After`. The retry then succeeds or
+gets a clean `409`.
+
 ## Alternatives considered
 
 | Option | Why not (alone) |

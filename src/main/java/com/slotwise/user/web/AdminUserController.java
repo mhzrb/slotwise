@@ -2,6 +2,7 @@ package com.slotwise.user.web;
 
 import com.slotwise.auth.security.AuthenticatedUser;
 import com.slotwise.common.web.PageResponse;
+import com.slotwise.common.web.SortWhitelist;
 import com.slotwise.user.domain.Role;
 import com.slotwise.user.service.UserService;
 import com.slotwise.user.web.dto.UpdateUserStatusRequest;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -29,6 +31,8 @@ import java.util.UUID;
 @PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Admin - Users", description = "User administration (ADMIN only)")
 public class AdminUserController {
+
+    private static final Set<String> SORTABLE = Set.of("createdAt", "email", "fullName", "role");
 
     private final UserService userService;
 
@@ -43,7 +47,7 @@ public class AdminUserController {
             @RequestParam(required = false) Boolean enabled,
             @RequestParam(required = false) String q,
             @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return PageResponse.from(userService.search(role, enabled, q, pageable),
+        return PageResponse.from(userService.search(role, enabled, q, SortWhitelist.restrict(pageable, SORTABLE)),
                 UserResponse::from);
     }
 

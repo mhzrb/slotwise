@@ -61,9 +61,20 @@ public class SecurityConfig implements WebMvcConfigurer {
                                 "/api/v1/auth/refresh").permitAll()
                         .requestMatchers(PUBLIC_DOCS).permitAll()
                         .requestMatchers("/actuator/health/**", "/actuator/info", "/error").permitAll()
+                        // Role rules are enforced here, in the filter chain, so they apply BEFORE request
+                        // bodies are bound and validated (a wrong role gets 403, never a 400 that reveals
+                        // validation details). Controllers repeat them with @PreAuthorize as defence in depth.
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // "me" endpoints must be matched before the public provider catalogue
                         .requestMatchers("/api/v1/providers/me", "/api/v1/providers/me/**").hasRole("PROVIDER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/appointments").hasRole("CUSTOMER")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/appointments/me").hasRole("CUSTOMER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/appointments/*/reschedule").hasRole("CUSTOMER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/appointments/*/confirm",
+                                "/api/v1/appointments/*/reject", "/api/v1/appointments/*/complete")
+                        .hasRole("PROVIDER")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/services/*").hasRole("PROVIDER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/services/*").hasRole("PROVIDER")
                         .requestMatchers(HttpMethod.GET, "/api/v1/providers", "/api/v1/providers/**",
                                 "/api/v1/services", "/api/v1/services/**").permitAll()
                         .anyRequest().authenticated())

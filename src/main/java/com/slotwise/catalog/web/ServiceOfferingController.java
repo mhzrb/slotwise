@@ -5,6 +5,7 @@ import com.slotwise.catalog.service.ServiceOfferingService;
 import com.slotwise.catalog.web.dto.ServiceRequest;
 import com.slotwise.catalog.web.dto.ServiceResponse;
 import com.slotwise.common.web.PageResponse;
+import com.slotwise.common.web.SortWhitelist;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,11 +31,14 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
 @Tag(name = "Services", description = "Services offered by providers")
 public class ServiceOfferingController {
+
+    private static final Set<String> SORTABLE = Set.of("name", "price", "durationMinutes", "createdAt");
 
     private final ServiceOfferingService serviceOfferingService;
 
@@ -77,7 +81,8 @@ public class ServiceOfferingController {
             @RequestParam(required = false) @DecimalMin("0") BigDecimal maxPrice,
             @RequestParam(required = false) @Min(1) Integer maxDurationMinutes,
             @ParameterObject @PageableDefault(sort = "name") Pageable pageable) {
-        return PageResponse.from(serviceOfferingService.search(q, providerId, maxPrice, maxDurationMinutes, pageable),
+        return PageResponse.from(serviceOfferingService.search(q, providerId, maxPrice, maxDurationMinutes,
+                SortWhitelist.restrict(pageable, SORTABLE)),
                 ServiceResponse::from);
     }
 

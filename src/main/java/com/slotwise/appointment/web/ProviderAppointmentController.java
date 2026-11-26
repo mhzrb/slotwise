@@ -7,6 +7,7 @@ import com.slotwise.appointment.web.dto.AppointmentResponse;
 import com.slotwise.appointment.web.dto.ScheduleResponse;
 import com.slotwise.auth.security.AuthenticatedUser;
 import com.slotwise.common.web.PageResponse;
+import com.slotwise.common.web.SortWhitelist;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,12 +23,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Set;
 
 /** Provider views of their appointments. PROVIDER role enforced by the /providers/me/** URL rule. */
 @RestController
 @RequestMapping("/api/v1/providers/me")
 @Tag(name = "Provider appointments", description = "Appointments and agenda of the authenticated provider")
 public class ProviderAppointmentController {
+
+    private static final Set<String> SORTABLE = Set.of("startAt", "createdAt", "status");
 
     private final AppointmentService appointmentService;
 
@@ -42,7 +46,8 @@ public class ProviderAppointmentController {
             @RequestParam(required = false) Instant from,
             @RequestParam(required = false) Instant to,
             @ParameterObject @PageableDefault(sort = "startAt", direction = Sort.Direction.ASC) Pageable pageable) {
-        return PageResponse.from(appointmentService.listForProvider(currentUser.id(), status, from, to, pageable),
+        return PageResponse.from(appointmentService.listForProvider(currentUser.id(), status, from, to,
+                SortWhitelist.restrict(pageable, SORTABLE)),
                 AppointmentResponse::from);
     }
 
