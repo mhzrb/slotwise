@@ -26,6 +26,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLException;
@@ -92,7 +93,7 @@ public class AppointmentService {
 
     // ================================================================== booking
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public Appointment book(UUID customerId, UUID serviceId, Instant startAt, String notes) {
         ServiceOffering service = serviceOfferingService.getPublic(serviceId);
         // (1) serialisation point for this provider's calendar
@@ -114,7 +115,7 @@ public class AppointmentService {
         return appointment;
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public Appointment reschedule(UUID customerId, UUID appointmentId, Instant newStart) {
         Appointment appointment = getDetailed(appointmentId);
         requireCustomer(appointment, customerId);

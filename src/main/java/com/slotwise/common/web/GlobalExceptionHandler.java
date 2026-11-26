@@ -80,11 +80,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "The resource was modified concurrently; reload and retry", null);
     }
 
+    /** Lock wait exceeded {@code lock_timeout}: transient contention, safe to retry. */
     @ExceptionHandler(PessimisticLockingFailureException.class)
     ResponseEntity<ProblemDetail> handlePessimisticLock(PessimisticLockingFailureException ex) {
-        log.warn("Lock acquisition failed", ex);
-        return build(HttpStatus.CONFLICT, "LOCK_TIMEOUT",
+        log.warn("Lock acquisition failed: {}", ex.getMostSpecificCause().getMessage());
+        ResponseEntity<ProblemDetail> response = build(HttpStatus.SERVICE_UNAVAILABLE, "LOCK_TIMEOUT",
                 "The resource is busy; please retry", null);
+        return ResponseEntity.status(response.getStatusCode()).header(HttpHeaders.RETRY_AFTER, "1")
+                .body(response.getBody());
     }
 
     @ExceptionHandler({AccessDeniedException.class, AuthorizationDeniedException.class})

@@ -7,6 +7,9 @@ spring:
     password: ${DB_PASSWORD:}
     hikari:
       maximum-pool-size: ${DB_POOL_SIZE:20}
+      # Bound waits on row locks (e.g. the provider booking lock). Bookings hold the
+      # lock for milliseconds; a wait this long signals contention, surfaced as 503.
+      connection-init-sql: SET lock_timeout = '${DB_LOCK_TIMEOUT:5s}'
   jpa:
     open-in-view: false
     hibernate:

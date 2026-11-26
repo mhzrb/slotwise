@@ -13,3 +13,6 @@ logging:
     com.slotwise: INFO
     org.testcontainers: WARN
     com.github.dockerjava: WARN
+
+# Short lock timeout so the lock-timeout test runs quickly.
+DB_LOCK_TIMEOUT: 2s
