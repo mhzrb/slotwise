@@ -6,6 +6,7 @@ import com.slotwise.auth.web.dto.AuthResponse;
 import com.slotwise.auth.web.dto.RegisterRequest;
 import com.slotwise.common.exception.ConflictException;
 import com.slotwise.common.exception.UnauthorizedException;
+import com.slotwise.provider.service.ProviderService;
 import com.slotwise.user.domain.Role;
 import com.slotwise.user.domain.User;
 import com.slotwise.user.domain.UserRepository;
@@ -31,17 +32,19 @@ public class AuthService {
     private final AccessTokenService accessTokenService;
     private final RefreshTokenService refreshTokenService;
     private final RevokedAccessTokenRepository revokedAccessTokenRepository;
+    private final ProviderService providerService;
     /** Used to spend the same time on unknown emails as on wrong passwords (no user enumeration by timing). */
     private final String dummyPasswordHash;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
             AccessTokenService accessTokenService, RefreshTokenService refreshTokenService,
-            RevokedAccessTokenRepository revokedAccessTokenRepository) {
+            RevokedAccessTokenRepository revokedAccessTokenRepository, ProviderService providerService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.accessTokenService = accessTokenService;
         this.refreshTokenService = refreshTokenService;
         this.revokedAccessTokenRepository = revokedAccessTokenRepository;
+        this.providerService = providerService;
         this.dummyPasswordHash = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
@@ -54,6 +57,9 @@ public class AuthService {
         Role role = request.role() == null ? Role.CUSTOMER : request.role();
         User user = userRepository.save(new User(email, passwordEncoder.encode(request.password()),
                 request.fullName().trim(), request.phone(), role));
+        if (role == Role.PROVIDER) {
+            providerService.createProfile(user, request.businessName(), request.timeZone());
+        }
         log.info("Registered new {} account {}", role, user.getId());
         return tokensFor(user, refreshTokenService.issueNewFamily(user));
     }

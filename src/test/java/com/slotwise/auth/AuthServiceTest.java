@@ -9,6 +9,7 @@ import com.slotwise.auth.web.dto.AuthResponse;
 import com.slotwise.auth.web.dto.RegisterRequest;
 import com.slotwise.common.exception.ConflictException;
 import com.slotwise.common.exception.UnauthorizedException;
+import com.slotwise.provider.service.ProviderService;
 import com.slotwise.user.domain.Role;
 import com.slotwise.user.domain.User;
 import com.slotwise.user.domain.UserRepository;
@@ -48,6 +49,8 @@ class AuthServiceTest {
     RefreshTokenService refreshTokenService;
     @Mock
     RevokedAccessTokenRepository revokedAccessTokenRepository;
+    @Mock
+    ProviderService providerService;
 
     AuthService authService;
 
@@ -55,7 +58,7 @@ class AuthServiceTest {
     void setUp() {
         when(passwordEncoder.encode(anyString())).thenReturn("{bcrypt}dummy");
         authService = new AuthService(userRepository, passwordEncoder, accessTokenService, refreshTokenService,
-                revokedAccessTokenRepository);
+                revokedAccessTokenRepository, providerService);
     }
 
     @Test
@@ -87,6 +90,20 @@ class AuthServiceTest {
         assertThat(response.accessToken()).isEqualTo("access");
         assertThat(response.refreshToken()).isEqualTo("refresh");
         assertThat(response.expiresIn()).isEqualTo(900);
+        verify(providerService, never()).createProfile(any(), any(), any());
+    }
+
+    @Test
+    void providerRegistrationCreatesProviderProfile() {
+        when(userRepository.existsByEmail("p@example.com")).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> withId(inv.getArgument(0)));
+        when(accessTokenService.issue(any())).thenReturn(
+                new AccessTokenService.IssuedAccessToken("access", Instant.now(), 900));
+
+        authService.register(new RegisterRequest("p@example.com", "Secret123", "P", null, Role.PROVIDER,
+                "Biz", "Europe/Paris"));
+
+        verify(providerService).createProfile(any(User.class), eq("Biz"), eq("Europe/Paris"));
     }
 
     @Test
