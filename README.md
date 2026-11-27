@@ -1,4 +1,5 @@
 # Slotwise — Appointment Booking & Scheduling API
+[![CI](https://github.com/mhzrb/slotwise/actions/workflows/ci.yml/badge.svg)](https://github.com/mhzrb/slotwise/actions/workflows/ci.yml)
 
 Slotwise is a backend for booking appointments with service providers such as clinics, salons, tutors and consultants.
 Customers discover providers, see real-time availability and book, cancel or reschedule appointments. Providers manage
